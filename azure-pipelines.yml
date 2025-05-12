@@ -1,40 +1,48 @@
-# ASP.NET Core (.NET Framework)
-
-# Build and test ASP.NET Core projects targeting the full .NET Framework.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
 trigger:
 - main
+
+variables:
+  buildConfiguration: 'Release'
 
 pool:
   vmImage: 'windows-latest'
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
-
 steps:
-- task: NuGetToolInstaller@1
-
-- task: NuGetCommand@2
+# Install .NET 6 SDK
+- task: UseDotNet@2
+  displayName: 'Install .NET 6 SDK'
   inputs:
-    restoreSolution: '$(solution)'
+    packageType: 'sdk'
+    version: '6.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 
+# Restore NuGet packages
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet Packages'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+
+# Build the project
 - task: DotNetCoreCLI@2
   displayName: 'Build'
   inputs:
     command: 'build'
-    projects: '*/.csproj'
+    projects: '**/*.csproj'
     arguments: '--configuration $(buildConfiguration)'
 
-
-
-
-    
-- task: PublishBuildArtifacts@1
+# Publish the project (explicitly disable web project detection)
+- task: DotNetCoreCLI@2
+  displayName: 'Publish'
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    command: 'publish'
+    publishWebProjects: false
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/publish'
+
+# Publish build artifacts
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Artifact'
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)/publish'
+    artifact: 'drop'
