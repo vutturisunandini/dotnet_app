@@ -26,8 +26,9 @@ steps:
   displayName: 'Build'
   inputs:
     command: 'build'
-    projects: '$(solution)'
+    projects: '*/.csproj'
     arguments: '--configuration $(buildConfiguration)'
+
 
 
 
